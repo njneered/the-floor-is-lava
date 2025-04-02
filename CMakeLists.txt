@@ -3,24 +3,29 @@ project(the-floor-is-lava)
 
 set(CMAKE_CXX_STANDARD 17)
 
-# SFML
-find_package(SFML 2.5 COMPONENTS graphics window system REQUIRED)
+include(FetchContent)
+FetchContent_Declare(
+        SFML
+        GIT_REPOSITORY https://github.com/SFML/SFML.git
+        GIT_TAG 2.6.x
+)
 
-# tmxlite
-add_subdirectory(external/tmxlite)
+#FetchContent_Declare(
+#        tmxlite
+#        GIT_REPOSITORY https://github.com/fallahn/tmxlite.git
+#        GIT_TAG        3.1.0
+#)
+FetchContent_MakeAvailable(SFML)
 
-# Your source files
-file(GLOB_RECURSE SOURCES "src/*.cpp")
-file(GLOB_RECURSE HEADERS "include/*.hpp")
-
-add_executable(the-floor-is-lava main.cpp)
-
-target_include_directories(the-floor-is-lava PRIVATE include)
+add_executable(the-floor-is-lava
+        main.cpp
+        AStar.cpp
+        AStar.h
+)
 
 target_link_libraries(the-floor-is-lava
-        PRIVATE
-        sfml-graphics
-        sfml-window
         sfml-system
-        tmxlite
+        sfml-window
+        sfml-graphics
+#        tmxlite
 )
