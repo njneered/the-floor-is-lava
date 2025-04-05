@@ -22,6 +22,8 @@ add_executable(the-floor-is-lava
         main.cpp
         AStar.cpp
         AStar.h
+        Map.h
+        map.cpp
 )
 
 target_link_libraries(the-floor-is-lava
