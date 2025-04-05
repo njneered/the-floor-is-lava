@@ -6,6 +6,8 @@
 #define THE_FLOOR_IS_LAVA_MAP_H
 
 
+
+
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <tinyxml2.h>
@@ -13,6 +15,8 @@
 #include <string>
 #include <iostream>
 #include <map>
+
+
 
 
 class Map {
@@ -24,17 +28,25 @@ class Map {
     };
 
 
+
+
     std::vector<TileLayer> layers;
     std::map<unsigned, sf::Texture> tileTextures;
     std::map<unsigned, sf::Sprite> tileSprites;
+
+
 
 
     int tileWidth;
     int tileHeight;
 
 
+
+
 public:
     Map();
+
+
 
 
     bool loadFromFile(const std::string& tmxFilePath, int tileWidth, int tileHeight);
@@ -43,9 +55,14 @@ public:
     void draw(sf::RenderWindow& window) const;
 
 
+
+
     int getWidth() const;
     int getHeight() const;
 };
 
 
+
+
 #endif // THE_FLOOR_IS_LAVA_MAP_H
+
