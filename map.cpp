@@ -50,11 +50,9 @@ bool Map::parseTilesets(XMLElement* mapElement) {
          tilesetElem = tilesetElem->NextSiblingElement("tileset")) {
 
         int firstGID = tilesetElem->IntAttribute("firstgid");
-
-        // Load <image> from within <tileset>
         XMLElement* imageElem = tilesetElem->FirstChildElement("image");
         if (!imageElem) {
-            std::cerr << "Tileset missing <image> tag.\n";
+            std::cerr << "No image found in tileset!\n";
             continue;
         }
 
@@ -62,50 +60,22 @@ bool Map::parseTilesets(XMLElement* mapElement) {
         if (!imagePath) continue;
 
         std::string fullPath = "sprites/" + std::string(imagePath);
-
-        sf::Texture tilesetTexture;
-        if (!tilesetTexture.loadFromFile(fullPath)) {
-            std::cerr << "Failed to load tileset: " << fullPath << "\n";
+        sf::Texture texture;
+        if (!texture.loadFromFile(fullPath)) {
+            std::cerr << "Failed to load tilesheet: " << fullPath << "\n";
             continue;
         }
 
-        // Read tile metadata
-        int tileWidth = tilesetElem->IntAttribute("tilewidth");
-        int tileHeight = tilesetElem->IntAttribute("tileheight");
-        int spacing = tilesetElem->IntAttribute("spacing", 0);
-        int margin = tilesetElem->IntAttribute("margin", 0);
-        int columns = tilesetElem->IntAttribute("columns");
+        // Store texture (shared across all tiles)
+        tileTextures[firstGID] = texture;
 
-        // Store each tile from the tilesheet as a sprite
-        for (int i = 0; i < tilesetElem->IntAttribute("tilecount"); ++i) {
-            int gid = firstGID + i;
-
-            int tx = i % columns;
-            int ty = i / columns;
-
-            sf::IntRect rect(
-                margin + tx * (tileWidth + spacing),
-                margin + ty * (tileHeight + spacing),
-                tileWidth,
-                tileHeight
-            );
-
-            sf::Texture tileTex;
-            tileTex.loadFromImage(tilesetTexture.copyToImage(), rect);
-
-            tileTextures[gid] = tileTex;
-
-            sf::Sprite sprite;
-            sprite.setTexture(tileTextures[gid]);
-            tileSprites[gid] = sprite;
-
-            std::cout << "Loaded tile GID " << gid << " from tilesheet region: "
-                      << rect.left << "," << rect.top << "\n";
-        }
-    }
+        // Store as base tilesheet texture (for slicing later)
+        tileSprites[firstGID].setTexture(tileTextures[firstGID]);
+         }
 
     return true;
 }
+
 
 
 
@@ -174,39 +144,48 @@ bool Map::parseLayers(XMLElement* mapElement, int width, int height) {
 
 
 void Map::draw(sf::RenderWindow& window) const {
-   for (const auto& layer : layers) {
-       for (int y = 0; y < layer.height; ++y) {
-           for (int x = 0; x < layer.width; ++x) {
-               int index = x + y * layer.width;
+    if (tileTextures.empty()) return;
 
+    // Get the first texture as the tilesheet
+    auto it = tileTextures.begin();
+    const sf::Texture& tilesheet = it->second;
+    int tilesPerRow = tilesheet.getSize().x / tileWidth;
 
-               // ✅ Prevent crashes from bad tile data
-               if (index >= layer.tileIDs.size()) continue;
+    sf::Sprite sprite;
+    sprite.setTexture(tilesheet);
 
+    for (const auto& layer : layers) {
+        for (int y = 0; y < layer.height; ++y) {
+            for (int x = 0; x < layer.width; ++x) {
+                int index = x + y * layer.width;
+                if (index >= layer.tileIDs.size()) continue;
 
-               unsigned tileID = layer.tileIDs[index];
-               if (tileID == 0) continue;
+                unsigned tileID = layer.tileIDs[index];
+                if (tileID == 0) continue;
 
+                // Adjust for firstGID (assume it's 1)
+                unsigned gid = tileID - 1;
 
-               if (tileSprites.find(tileID) == tileSprites.end()) {
-                   std::cerr << "Missing sprite for tileID: " << tileID << "\n";
-                   continue;
-               }
+                int tx = gid % tilesPerRow;
+                int ty = gid / tilesPerRow;
 
+                sprite.setTextureRect(sf::IntRect(
+                    tx * tileWidth,
+                    ty * tileHeight,
+                    tileWidth,
+                    tileHeight
+                ));
 
-               sf::Sprite sprite = tileSprites.at(tileID);
+                float isoX = static_cast<float>((x - y) * (tileWidth / 2));
+                float isoY = static_cast<float>((x + y) * (tileHeight / 2));
 
-
-               float isoX = static_cast<float>((x - y) * (tileWidth / 2));
-               float isoY = static_cast<float>((x + y) * (tileHeight / 2));
-
-
-               sprite.setPosition(isoX, isoY);
-               window.draw(sprite);
-           }
-       }
-   }
+                sprite.setPosition(isoX, isoY);
+                window.draw(sprite);
+            }
+        }
+    }
 }
+
 
 
 int Map::getWidth() const {
