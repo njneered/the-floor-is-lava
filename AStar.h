@@ -1,14 +1,16 @@
-//
-// Created by andon on 3/18/2025.
-//
-
 #ifndef ASTAR_H
 #define ASTAR_H
 
-
-
 class AStar {
-
+public:
+    struct Node {
+        int x;
+        int y;
+        float g;
+        float h;
+        float f;
+        Node* parent;
+    };
 };
 
 

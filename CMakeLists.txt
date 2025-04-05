@@ -10,12 +10,13 @@ FetchContent_Declare(
         GIT_TAG 2.6.x
 )
 
-#FetchContent_Declare(
-#        tmxlite
-#        GIT_REPOSITORY https://github.com/fallahn/tmxlite.git
-#        GIT_TAG        3.1.0
-#)
-FetchContent_MakeAvailable(SFML)
+FetchContent_Declare(
+        tinyxml2
+        GIT_REPOSITORY https://github.com/leethomason/tinyxml2.git
+        GIT_TAG        master
+)
+
+FetchContent_MakeAvailable(SFML tinyxml2)
 
 add_executable(the-floor-is-lava
         main.cpp
@@ -27,5 +28,5 @@ target_link_libraries(the-floor-is-lava
         sfml-system
         sfml-window
         sfml-graphics
-#        tmxlite
+        tinyxml2
 )
