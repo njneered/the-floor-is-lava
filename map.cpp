@@ -45,53 +45,68 @@ bool Map::loadFromFile(const std::string& tmxFilePath, int tw, int th) {
 
 
 bool Map::parseTilesets(XMLElement* mapElement) {
-   for (XMLElement* tilesetElem = mapElement->FirstChildElement("tileset");
-        tilesetElem != nullptr;
-        tilesetElem = tilesetElem->NextSiblingElement("tileset")) {
+    for (XMLElement* tilesetElem = mapElement->FirstChildElement("tileset");
+         tilesetElem != nullptr;
+         tilesetElem = tilesetElem->NextSiblingElement("tileset")) {
 
+        int firstGID = tilesetElem->IntAttribute("firstgid");
 
-       int firstGID = tilesetElem->IntAttribute("firstgid");
+        // Load <image> from within <tileset>
+        XMLElement* imageElem = tilesetElem->FirstChildElement("image");
+        if (!imageElem) {
+            std::cerr << "Tileset missing <image> tag.\n";
+            continue;
+        }
 
+        const char* imagePath = imageElem->Attribute("source");
+        if (!imagePath) continue;
 
-       for (XMLElement* tileElem = tilesetElem->FirstChildElement("tile");
-            tileElem != nullptr;
-            tileElem = tileElem->NextSiblingElement("tile")) {
+        std::string fullPath = "sprites/" + std::string(imagePath);
 
+        sf::Texture tilesetTexture;
+        if (!tilesetTexture.loadFromFile(fullPath)) {
+            std::cerr << "Failed to load tileset: " << fullPath << "\n";
+            continue;
+        }
 
-           int localID = tileElem->IntAttribute("id");
-           int globalID = firstGID + localID;
+        // Read tile metadata
+        int tileWidth = tilesetElem->IntAttribute("tilewidth");
+        int tileHeight = tilesetElem->IntAttribute("tileheight");
+        int spacing = tilesetElem->IntAttribute("spacing", 0);
+        int margin = tilesetElem->IntAttribute("margin", 0);
+        int columns = tilesetElem->IntAttribute("columns");
 
+        // Store each tile from the tilesheet as a sprite
+        for (int i = 0; i < tilesetElem->IntAttribute("tilecount"); ++i) {
+            int gid = firstGID + i;
 
-           XMLElement* imageElem = tileElem->FirstChildElement("image");
-           if (imageElem == nullptr) continue;
+            int tx = i % columns;
+            int ty = i / columns;
 
+            sf::IntRect rect(
+                margin + tx * (tileWidth + spacing),
+                margin + ty * (tileHeight + spacing),
+                tileWidth,
+                tileHeight
+            );
 
-           const char* imagePath = imageElem->Attribute("source");
-           if (imagePath == nullptr) continue;
+            sf::Texture tileTex;
+            tileTex.loadFromImage(tilesetTexture.copyToImage(), rect);
 
+            tileTextures[gid] = tileTex;
 
-           std::string fullPath = "sprites/" + std::string(imagePath);
+            sf::Sprite sprite;
+            sprite.setTexture(tileTextures[gid]);
+            tileSprites[gid] = sprite;
 
+            std::cout << "Loaded tile GID " << gid << " from tilesheet region: "
+                      << rect.left << "," << rect.top << "\n";
+        }
+    }
 
-           sf::Texture texture;
-           if (!texture.loadFromFile(fullPath)) {
-               cerr << "Failed to load tile image: " << fullPath << "\n";
-               continue;
-           }
-
-
-           tileTextures[globalID] = texture;
-
-
-           sf::Sprite sprite;
-           sprite.setTexture(tileTextures[globalID]);
-           tileSprites[globalID] = sprite;
-       }
-   }
-
-
-   return true;
+    return true;
 }
+
 
 
 bool Map::parseLayers(XMLElement* mapElement, int width, int height) {
