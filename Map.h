@@ -10,7 +10,7 @@
 
 #pragma once
 #include <SFML/Graphics.hpp>
-#include <tinyxml2.h>
+#include <tinyxml2-master/tinyxml2.h>
 #include <vector>
 #include <string>
 #include <iostream>
